@@ -43,7 +43,12 @@ mkdir "${workdir}"
 cd "${workdir}"
 
 # clone repo
-git clone "${repo}"
+if ! git clone "${repo}"
+then
+    echo "Failed to clone repo!"
+    exit 1
+fi
+
 
 # switch to build dir
 cd "${repodir}"
