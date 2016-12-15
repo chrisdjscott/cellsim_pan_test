@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -J cellsim_test
 #SBATCH -A nesi00119          # Project Account
-#SBATCH --time=0:15:00        # Walltime HH:MM:SS
+#SBATCH --time=0:59:00        # Walltime HH:MM:SS
 #SBATCH --mem-per-cpu=2G     # Memory
 #SBATCH --ntasks=1            # number of tasks
 #SBATCH --cpus-per-task=1     # number of threads
