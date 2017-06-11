@@ -12,7 +12,7 @@
 
 # load modules
 module purge
-module load CMake/3.4.1-GCC-4.9.2
+module load CMake/3.6.1
 module load Python/3.5.1-intel-2015a
 
 # repo
@@ -29,12 +29,12 @@ tests[6]="generic3d_04_pan_mkl-intel"
 echo "Running test for cellsim_34_vcl: ${tests[$SLURM_ARRAY_TASK_ID]}"
 
 # list of cmake args corresponding to above
-cmakeargs[1]="-DFOUR_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN"
-cmakeargs[2]="-DTHREE_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN"
-cmakeargs[3]="-DBUILD_SERIAL=OFF -DBUILD_CUDA=ON -DFOUR_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASE"
-cmakeargs[4]="-DBUILD_SERIAL=OFF -DBUILD_CUDA=ON -DTHREE_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASE"
-cmakeargs[5]="-DBUILD_SERIAL=OFF -DBUILD_MKL=ON -DFOUR_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN"
-cmakeargs[6]="-DBUILD_SERIAL=OFF -DBUILD_MKL=ON -DTHREE_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN"
+cmakeargs[1]="-DFOUR_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN -DTEST_PYTHON_REDUCE=OFF"
+cmakeargs[2]="-DTHREE_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN -DTEST_PYTHON_REDUCE=OFF"
+cmakeargs[3]="-DBUILD_SERIAL=OFF -DBUILD_CUDA=ON -DFOUR_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASE -DTEST_PYTHON_REDUCE=OFF"
+cmakeargs[4]="-DBUILD_SERIAL=OFF -DBUILD_CUDA=ON -DTHREE_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASE -DTEST_PYTHON_REDUCE=OFF"
+cmakeargs[5]="-DBUILD_SERIAL=OFF -DBUILD_MKL=ON -DFOUR_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN -DTEST_PYTHON_REDUCE=OFF"
+cmakeargs[6]="-DBUILD_SERIAL=OFF -DBUILD_MKL=ON -DTHREE_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN -DTEST_PYTHON_REDUCE=OFF"
 
 # working dir for this process
 workdir="${SLURM_ARRAY_TASK_ID}_${tests[$SLURM_ARRAY_TASK_ID]}"
@@ -49,7 +49,6 @@ then
     exit 1
 fi
 
-
 # switch to build dir
 cd "${repodir}"
 mkdir build
@@ -57,41 +56,22 @@ cd build
 
 # run cmake
 echo "Running cmake..."
-if echo ${tests[$SLURM_ARRAY_TASK_ID]} | grep cuda
-then
-    CXX=g++ cmake .. ${cmakeargs[$SLURM_ARRAY_TASK_ID]}
-else
-    CXX=icpc cmake .. ${cmakeargs[$SLURM_ARRAY_TASK_ID]}
-fi
+CXX=icpc cmake .. ${cmakeargs[$SLURM_ARRAY_TASK_ID]}
 
 # compile code
 echo "Compiling..."
-make
-
-# test dir
-cd ../test
-
-# prepare to run the test
-echo "Preparing to run test..."
-cp -f cell01m_HARMONIC_100p.msh cs.msh
-if echo ${tests[$SLURM_ARRAY_TASK_ID]} | grep "_03"
-then
-    cp -f generic3d_03-cs.dat cs.dat
-else
-    cp -f generic3d_04-cs.dat cs.dat
-fi
+srun make
 
 # run the code
 echo "Running test..."
-srun ../build/${tests[$SLURM_ARRAY_TASK_ID]}
 
 # compare the result
-if python cs_compare_peaks.py cR.bin generic3d-cR.bin
+if srun ctest --output-on-failure
 then
-    echo "Binary output files match"
+    echo "Test succeeded"
     outcome="Success for ${tests[$SLURM_ARRAY_TASK_ID]}"
 else
-    # if the binary files did not match, run the python script to see how big the difference was
+    echo "Test failed"
     outcome="Failure for ${tests[$SLURM_ARRAY_TASK_ID]}"
 fi
 
