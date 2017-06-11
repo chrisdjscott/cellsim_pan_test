@@ -22,8 +22,8 @@ repodir=$(basename "${repo}" | cut -d'.' -f1)
 # list of tests
 tests[1]="generic3d_03_pan_vcl-serial-intel"
 tests[2]="generic3d_04_pan_vcl-serial-intel"
-tests[3]="generic3d_03_pan_vcl-cuda-gnu"
-tests[4]="generic3d_04_pan_vcl-cuda-gnu"
+tests[3]="generic3d_03_pan_vcl-cuda-intel"
+tests[4]="generic3d_04_pan_vcl-cuda-intel"
 tests[5]="generic3d_03_pan_mkl-intel"
 tests[6]="generic3d_04_pan_mkl-intel"
 echo "Running test for cellsim_34_vcl: ${tests[$SLURM_ARRAY_TASK_ID]}"
@@ -37,13 +37,14 @@ cmakeargs[5]="-DBUILD_SERIAL=OFF -DBUILD_MKL=ON -DFOUR_VARIABLES=OFF -DCMAKE_BUI
 cmakeargs[6]="-DBUILD_SERIAL=OFF -DBUILD_MKL=ON -DTHREE_VARIABLES=OFF -DCMAKE_BUILD_TYPE=RELEASEPAN -DTEST_PYTHON_REDUCE=OFF"
 
 # working dir for this process
-workdir="${SLURM_ARRAY_TASK_ID}_${tests[$SLURM_ARRAY_TASK_ID]}"
+resultdir=$(pwd)
+workdir="${SCRATCH_DIR}/${SLURM_ARRAY_TASK_ID}_${tests[$SLURM_ARRAY_TASK_ID]}"
 echo "Switching to working dir: ${workdir}"
 mkdir "${workdir}"
 cd "${workdir}"
 
 # clone repo
-if ! git clone "${repo}"
+if ! srun git clone "${repo}"
 then
     echo "Failed to clone repo!"
     exit 1
@@ -56,7 +57,7 @@ cd build
 
 # run cmake
 echo "Running cmake..."
-CXX=icpc cmake .. ${cmakeargs[$SLURM_ARRAY_TASK_ID]}
+srun cmake -DCMAKE_CXX_COMPILER=icpc ${cmakeargs[$SLURM_ARRAY_TASK_ID]} ..
 
 # compile code
 echo "Compiling..."
@@ -76,4 +77,4 @@ else
 fi
 
 # write output file
-echo ${outcome} > "../../../result_${SLURM_ARRAY_TASK_ID}.txt"
+echo ${outcome} > "${resultdir}/result_${SLURM_ARRAY_TASK_ID}.txt"

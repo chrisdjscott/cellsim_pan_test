@@ -23,8 +23,8 @@ if [ ! -f "${slurmscript}" ]; then
 fi
 
 # create/clear test directory and make sure we have the absolute path
-rm -rf "${testrundir}"
 mkdir -p "${testrundir}"
+rm "${testrundir}"/*
 rundir=$(cd "${testrundir}" > /dev/null; pwd)
 
 # echo some settings
